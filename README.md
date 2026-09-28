@@ -169,7 +169,7 @@ public record Lecturer(String name, String email) {}
 
 Schema/codec derivation is cached by Jackson `JavaType`; it is not repeated per row. The hot encoding path writes directly to Jackson's `JsonGenerator` and does not construct `JsonNode` trees.
 
-The decoder validates the incoming schema header, then reads every row through a single Jackson reader, binding positional values straight to the target type without building a tree. Records and `@JsonCreator` types are constructed through a cached constructor handle, falling back to Jackson's own construction if that fails. Types whose nested columns differ between positions are decoded by buffering each row as named tokens instead; `JsvroReader.decoding()` reports which path a type uses.
+The decoder validates the incoming schema header, then reads every row through a single Jackson reader, binding positional values straight to the target type without building a tree. Records and `@JsonCreator` types are constructed through a cached constructor handle, falling back to Jackson's own construction if that fails. A stream written with a different but compatible schema gets its own positional plan, built from the incoming schema and cached per schema (up to 16 per type), so evolved streams decode as fast as streams with the reader's own schema. Rows are buffered as named tokens only for types whose nested columns differ between positions, for any further schemas beyond that cache, and for classes that combine a creator with an any-setter when unknown columns are present; `JsvroReader.decoding()` reports which path a type uses for its own schema.
 
 ## Current constraints
 
