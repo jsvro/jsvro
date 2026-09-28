@@ -3,6 +3,8 @@ plugins {
     `maven-publish`
 }
 
+description = "Spring Boot auto-configuration for JSVRO HTTP message conversion."
+
 dependencies {
     api(project(":jsvro-core"))
     implementation(libs.spring.boot.autoconfigure)
@@ -19,4 +21,10 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-webmvc-test")
+}
+
+tasks.jar {
+    manifest {
+        attributes("Automatic-Module-Name" to "io.github.jsvro.spring")
+    }
 }

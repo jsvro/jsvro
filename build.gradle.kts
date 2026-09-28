@@ -3,7 +3,7 @@ plugins {
 }
 
 allprojects {
-    group = "dev.jsvro"
+    group = "io.github.jsvro"
     version = "0.1.0-SNAPSHOT"
 
     repositories {
@@ -42,6 +42,29 @@ subprojects {
             publications {
                 create<MavenPublication>("mavenJava") {
                     from(components["java"])
+                    pom {
+                        name = project.name
+                        description = provider { project.description }
+                        url = "https://github.com/jsvro/jsvro"
+                        licenses {
+                            license {
+                                name = "The Apache License, Version 2.0"
+                                url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                            }
+                        }
+                        developers {
+                            developer {
+                                id = "steinard"
+                                name = "Steinar Dragsnes"
+                                email = "steinar.dragsnes@gmail.com"
+                            }
+                        }
+                        scm {
+                            connection = "scm:git:https://github.com/jsvro/jsvro.git"
+                            developerConnection = "scm:git:ssh://git@github.com/jsvro/jsvro.git"
+                            url = "https://github.com/jsvro/jsvro"
+                        }
+                    }
                 }
             }
         }

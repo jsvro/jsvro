@@ -1,17 +1,17 @@
 [
   {
-    "type": "record", "name": "AvroPoint", "namespace": "dev.jsvro.core.avro",
+    "type": "record", "name": "AvroPoint", "namespace": "io.github.jsvro.core.avro",
     "fields": [
       {"name": "lat", "type": "double"},
       {"name": "lon", "type": "double"}
     ]
   },
   {
-    "type": "enum", "name": "AvroAreaType", "namespace": "dev.jsvro.core.avro",
+    "type": "enum", "name": "AvroAreaType", "namespace": "io.github.jsvro.core.avro",
     "symbols": ["COUNTRY", "COUNTY", "MUNICIPALITY", "POST"]
   },
   {
-    "type": "record", "name": "AvroArea", "namespace": "dev.jsvro.core.avro",
+    "type": "record", "name": "AvroArea", "namespace": "io.github.jsvro.core.avro",
     "fields": [
       {"name": "areaType", "type": "AvroAreaType"},
       {"name": "code", "type": "string"},
@@ -21,7 +21,7 @@
     ]
   },
   {
-    "type": "record", "name": "AvroAddress", "namespace": "dev.jsvro.core.avro",
+    "type": "record", "name": "AvroAddress", "namespace": "io.github.jsvro.core.avro",
     "fields": [
       {"name": "street", "type": "string"},
       {"name": "city", "type": "string"},
@@ -30,7 +30,7 @@
     ]
   },
   {
-    "type": "record", "name": "AvroPerson", "namespace": "dev.jsvro.core.avro",
+    "type": "record", "name": "AvroPerson", "namespace": "io.github.jsvro.core.avro",
     "fields": [
       {"name": "name", "type": "string"},
       {"name": "age", "type": "int"},
@@ -40,28 +40,28 @@
     ]
   },
   {
-    "type": "enum", "name": "AvroSide", "namespace": "dev.jsvro.core.avro",
+    "type": "enum", "name": "AvroSide", "namespace": "io.github.jsvro.core.avro",
     "symbols": ["BUY", "SELL"]
   },
   {
-    "type": "enum", "name": "AvroDirection", "namespace": "dev.jsvro.core.avro",
+    "type": "enum", "name": "AvroDirection", "namespace": "io.github.jsvro.core.avro",
     "symbols": ["INCOMING", "OUTGOING"]
   },
   {
-    "type": "enum", "name": "AvroPricingType", "namespace": "dev.jsvro.core.avro",
+    "type": "enum", "name": "AvroPricingType", "namespace": "io.github.jsvro.core.avro",
     "symbols": ["MARKET", "AGREEMENT", "FEE", "REVERSAL", "RECALL", "SURPLUS", "OPERATOR_REVERSAL"]
   },
   {
-    "type": "enum", "name": "AvroFxTransactionFlow", "namespace": "dev.jsvro.core.avro",
+    "type": "enum", "name": "AvroFxTransactionFlow", "namespace": "io.github.jsvro.core.avro",
     "symbols": ["INSTANT", "STANDARD", "OFFER"]
   },
   {
-    "type": "enum", "name": "AvroFxTransactionState", "namespace": "dev.jsvro.core.avro",
+    "type": "enum", "name": "AvroFxTransactionState", "namespace": "io.github.jsvro.core.avro",
     "symbols": ["PROCESSING", "PARKED", "UNRESOLVED", "PRICED", "REJECTED", "RETRYABLE", "UNPRICEABLE",
       "REVERSAL_IN_PROCESS", "CUSTOMER_REVERSED", "OPERATOR_REVERSED", "SYSTEM_REVERSED", "OUTDATED", "NOT_PROCESSABLE"]
   },
   {
-    "type": "record", "name": "AvroFxTransaction", "namespace": "dev.jsvro.core.avro",
+    "type": "record", "name": "AvroFxTransaction", "namespace": "io.github.jsvro.core.avro",
     "fields": [
       {"name": "id", "type": "string"},
       {"name": "idempotencyKey", "type": "string"},
