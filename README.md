@@ -2,7 +2,7 @@
 
 Fast, compact, JSON-like serialization format.
 
-> **Status:** experimental `0.1.0-SNAPSHOT`. The v1 wire contract is documented in [SPEC.md](SPEC.md).
+> **Status:** experimental `0.1.0`. The v1 wire contract is documented in [SPEC.md](SPEC.md).
 
 **JSON Schema + Values, Row-Oriented**: a compact, streaming, human-readable wire format for JVM/Spring applications.
 
