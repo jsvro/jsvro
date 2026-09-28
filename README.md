@@ -39,19 +39,19 @@ JSVRO deliberately does **not** use dictionary IDs, null bitmaps, delta encoding
 
 ## Performance at a glance
 
-Compared with plain Jackson JSON, from the [published benchmark run](#benchmark) of 25 September 2026 on the author's development machine:
+Compared with plain Jackson JSON, from the [published benchmark run](#benchmark) of 28 September 2026 on the author's development machine:
 
 | JSVRO vs JSON | 10–50 rows | 100+ rows |
 |---|---|---|
-| Payload size | 39% smaller | 43% smaller |
-| Encode time | 12% less (1.14× faster) | 11% less (1.12× faster) |
-| Encode CPU | 13% less | 9% less |
-| Encode memory | the same | the same |
-| Decode time | 20% less (1.25× faster) | 28% less (1.38× faster) |
-| Decode CPU | 23% less | 27% less |
-| Decode memory | 2% less | 11% less |
+| Payload size | 38% smaller | 43% smaller |
+| Encode time | 21% less (1.26× faster) | 21% less (1.26× faster) |
+| Encode CPU | 19% less | 21% less |
+| Encode memory | 17% less | 17% less |
+| Decode time | 32% less (1.48× faster) | 33% less (1.50× faster) |
+| Decode CPU | 33% less | 33% less |
+| Decode memory | 31% less | 32% less |
 
-For the paged lists of 10–50 rows most APIs return, JSVRO sends 39% less data and encodes 12% and decodes 20% faster, using 13–23% less CPU and the same memory. Each column averages the row counts in its range, combined over the `Person`, `Area` and `FxTransaction` aggregate roots. Gains depend on the shape of your objects and your machine; see [Benchmark](#benchmark) for the disclaimer, the comparison with Avro and the full report.
+For the paged lists of 10–50 rows most APIs return, JSVRO sends 38% less data, encodes 1.26× and decodes 1.48× as fast, and uses about a fifth less CPU and memory to encode and a third less to decode. Each column averages the row counts in its range, combined over the `Person`, `Area` and `FxTransaction` aggregate roots. Gains depend on the shape of your objects and your machine; see [Benchmark](#benchmark) for the disclaimer, the comparison with Avro and the full report.
 
 ## Modules
 
@@ -200,30 +200,30 @@ JSVRO is compared with plain Jackson JSON, the readable format it replaces, and 
 > **Disclaimer:** these numbers were collected by running the benchmark on the author's development machine. Results vary with hardware, JVM, load and data shape, so treat them as an indication of gains and losses, not as guarantees. Run the benchmark on your own machine and data before deciding.
 
 <!-- benchmark-summary:start -->
-Measured 2026-09-25T10:18:09Z on Java 21.0.6+7-LTS with 11 CPUs. Each value is the geometric mean over the Person, Area and FxTransaction aggregate roots of baseline ÷ JSVRO: above 1.00× favours JSVRO, below 1.00× favours the baseline.
+Measured 2026-09-28T10:12:55Z on Java 21.0.6+7-LTS with 11 CPUs. Each value is the geometric mean over the Person, Area and FxTransaction aggregate roots of baseline ÷ JSVRO: above 1.00× favours JSVRO, below 1.00× favours the baseline.
 
 **JSVRO vs plain Jackson JSON**
 
 | Rows | Raw size | Gzip size | Encode time | Encode memory | Decode time | Decode memory |
 |---:|---:|---:|---:|---:|---:|---:|
-| 10 | 1.49× | 1.02× | 1.15× | 1.00× | 1.13× | 0.92× |
-| 100 | 1.73× | 1.08× | 1.15× | 1.00× | 1.32× | 1.10× |
-| 1,000 | 1.76× | 1.10× | 1.15× | 1.00× | 1.37× | 1.12× |
-| 10,000 | 1.76× | 1.10× | 1.14× | 1.00× | 1.41× | 1.13× |
-| 100,000 | 1.76× | 1.10× | 1.11× | 1.00× | 1.39× | 1.13× |
+| 10 | 1.49× | 1.02× | 1.24× | 1.20× | 1.47× | 1.41× |
+| 100 | 1.73× | 1.08× | 1.28× | 1.21× | 1.49× | 1.48× |
+| 1,000 | 1.76× | 1.10× | 1.28× | 1.21× | 1.50× | 1.48× |
+| 10,000 | 1.76× | 1.10× | 1.24× | 1.21× | 1.50× | 1.48× |
+| 100,000 | 1.76× | 1.10× | 1.30× | 1.21× | 1.52× | 1.48× |
 
 **JSVRO vs Avro (container file, generated classes)**
 
 | Rows | Raw size | Gzip size | Encode time | Encode memory | Decode time | Decode memory |
 |---:|---:|---:|---:|---:|---:|---:|
-| 10 | 0.91× | 1.40× | 0.75× | 3.70× | 1.44× | 2.92× |
-| 100 | 0.72× | 1.32× | 0.50× | 0.78× | 0.52× | 1.39× |
-| 1,000 | 0.70× | 1.30× | 0.49× | 0.46× | 0.44× | 1.14× |
-| 10,000 | 0.70× | 1.30× | 0.53× | 0.43× | 0.43× | 1.08× |
-| 100,000 | 0.70× | 1.30× | 0.56× | 0.43× | 0.43× | 1.07× |
+| 10 | 0.91× | 1.40× | 0.84× | 4.45× | 1.80× | 4.49× |
+| 100 | 0.72× | 1.32× | 0.55× | 0.94× | 0.56× | 1.88× |
+| 1,000 | 0.70× | 1.30× | 0.54× | 0.56× | 0.47× | 1.52× |
+| 10,000 | 0.70× | 1.30× | 0.56× | 0.53× | 0.46× | 1.43× |
+| 100,000 | 0.70× | 1.30× | 0.59× | 0.52× | 0.46× | 1.42× |
 <!-- benchmark-summary:end -->
 
-How to read it: against JSON, JSVRO is smaller and faster at every size, most of all when decoding, and needs no more memory to encode. Against Avro, JSVRO is about 40% bigger on the wire and takes roughly twice as long to encode and decode once a stream passes about 100 rows; it is smaller after gzip, allocates less memory when decoding, and is competitive for very small streams, where Avro's container header dominates. If you want payloads a person can read with `curl` and debug in a terminal, JSVRO keeps that at a lower cost than JSON. If readability does not matter and throughput does, choose Avro.
+How to read it: against JSON, JSVRO is smaller, faster and uses less memory at every size, most of all when decoding. Against Avro, JSVRO is about 40% bigger on the wire and takes roughly 1.8× as long to encode and just over 2× as long to decode once a stream passes about 100 rows; it is smaller after gzip, allocates less memory when decoding, and for 10–50 rows decodes as fast as Avro, where Avro's container header dominates. If you want payloads a person can read with `curl` and debug in a terminal, JSVRO keeps that at a lower cost than JSON. If readability does not matter and throughput does, choose Avro.
 
 Avro is measured as an object container file without compression, using classes generated from Avro schemas, with the mapping between the application objects and the generated classes included in encode and decode.
 
