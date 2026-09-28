@@ -40,6 +40,11 @@ final class ReferenceCodec implements ValueCodec {
     }
 
     @Override
+    public boolean collectIncomingTypes(JsvroColumn incoming, Map<Class<?>, List<String>> columnsByType) {
+        return contentCodec.collectIncomingTypes(incoming, columnsByType);
+    }
+
+    @Override
     public void write(Object value, JsonGenerator generator, SerializationContext context) {
         contentCodec.write(value == null ? null : dereference.apply(value), generator, context);
     }

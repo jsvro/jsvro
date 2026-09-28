@@ -15,4 +15,8 @@ interface ValueCodec {
     default boolean collectObjectTypes(Map<Class<?>, List<String>> columnsByType) {
         return true;
     }
+
+    default boolean collectIncomingTypes(JsvroColumn incoming, Map<Class<?>, List<String>> columnsByType) {
+        return true;
+    }
 }

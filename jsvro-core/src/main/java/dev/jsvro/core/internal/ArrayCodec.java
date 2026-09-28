@@ -27,6 +27,11 @@ final class ArrayCodec implements ValueCodec {
     }
 
     @Override
+    public boolean collectIncomingTypes(JsvroColumn incoming, Map<Class<?>, List<String>> columnsByType) {
+        return incoming.items() == null || itemCodec.collectIncomingTypes(incoming.items(), columnsByType);
+    }
+
+    @Override
     public void write(Object value, JsonGenerator generator, SerializationContext context) {
         if (value == null) {
             generator.writeNull();

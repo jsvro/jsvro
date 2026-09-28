@@ -1,5 +1,6 @@
 package dev.jsvro.core.internal;
 
+import dev.jsvro.core.JsvroColumn;
 import dev.jsvro.core.JsvroException;
 import dev.jsvro.core.JsvroSchema;
 import tools.jackson.core.JsonGenerator;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class RootCodec {
     private final JsvroSchema schema;
@@ -23,7 +25,10 @@ public final class RootCodec {
     private final byte[] headerLine;
     private final ObjectCodec codec;
     private final Map<Class<?>, List<String>> columnsByType;
+    private static final int MAX_INCOMING_PLANS = 16;
+
     private RowDecoder rowDecoder;
+    private final Map<JsvroSchema, RowDecoder> incomingDecoders = new ConcurrentHashMap<>();
 
     RootCodec(JsvroSchema schema, String header, ObjectCodec codec) {
         this.schema = schema;
@@ -73,27 +78,51 @@ public final class RootCodec {
 
     public synchronized RowDecoder rowDecoder(ObjectMapper mapper, JavaType type) {
         if (rowDecoder == null) {
-            rowDecoder = createRowDecoder(mapper, type);
+            RowDecoder positional = columnsByType == null ? null
+                    : positional(mapper, type, columnsByType, null, schema.columns());
+            rowDecoder = positional != null ? positional
+                    : new RowDecoder(mapper.readerFor(type), false, schema.columns(), new DecodingReport());
         }
         return rowDecoder;
     }
 
-    private RowDecoder createRowDecoder(ObjectMapper mapper, JavaType type) {
-        if (columnsByType != null) {
-            PositionalDeserializerModifier modifier = new PositionalDeserializerModifier(columnsByType);
-            ObjectMapper reading = mapper.rebuild()
-                    .addModule(new SimpleModule("jsvro-positional").setDeserializerModifier(modifier))
-                    .build();
-            // Each row is one of several root values in the stream; the next row is not a trailing token.
-            ObjectReader reader = reading.readerFor(type).without(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
-            for (Class<?> positionalType : modifier.positionalTypes()) {
-                reading.readerFor(positionalType);
-            }
-            if (modifier.allTypesSupported()) {
-                return new RowDecoder(reader, true, schema.columns(), modifier.report());
+    public RowDecoder rowDecoderFor(ObjectMapper mapper, JavaType type, JsvroSchema incoming) {
+        RowDecoder cached = incomingDecoders.get(incoming);
+        if (cached != null) {
+            return cached;
+        }
+        if (incomingDecoders.size() >= MAX_INCOMING_PLANS) {
+            return rowDecoder(mapper, type).forIncoming(incoming.columns());
+        }
+        return incomingDecoders.computeIfAbsent(incoming, schema -> createIncoming(mapper, type, schema));
+    }
+
+    private RowDecoder createIncoming(ObjectMapper mapper, JavaType type, JsvroSchema incoming) {
+        Map<Class<?>, List<String>> incomingColumns = new HashMap<>();
+        if (columnsByType != null
+                && codec.collectIncomingTypes(JsvroColumn.object("root", incoming.columns()), incomingColumns)) {
+            RowDecoder positional = positional(mapper, type, incomingColumns, columnsByType, incoming.columns());
+            if (positional != null) {
+                return positional;
             }
         }
-        return new RowDecoder(mapper.readerFor(type), false, schema.columns(), new DecodingReport());
+        return rowDecoder(mapper, type).forIncoming(incoming.columns());
+    }
+
+    private static RowDecoder positional(ObjectMapper mapper, JavaType type, Map<Class<?>, List<String>> columns,
+            Map<Class<?>, List<String>> knownColumns, List<JsvroColumn> rowColumns) {
+        PositionalDeserializerModifier modifier = knownColumns == null
+                ? new PositionalDeserializerModifier(columns)
+                : new PositionalDeserializerModifier(columns, knownColumns);
+        ObjectMapper reading = mapper.rebuild()
+                .addModule(new SimpleModule("jsvro-positional").setDeserializerModifier(modifier))
+                .build();
+        // Each row is one of several root values in the stream; the next row is not a trailing token.
+        ObjectReader reader = reading.readerFor(type).without(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+        for (Class<?> positionalType : modifier.positionalTypes()) {
+            reading.readerFor(positionalType);
+        }
+        return modifier.allTypesSupported() ? new RowDecoder(reader, true, rowColumns, modifier.report()) : null;
     }
 
     static SerializationContext context(JsonGenerator generator) {

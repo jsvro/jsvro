@@ -49,7 +49,8 @@ public final class JsvroCodec {
 
     public JsvroReader<Object> readerFor(JavaType elementType) {
         Objects.requireNonNull(elementType, "elementType");
-        return readers.computeIfAbsent(elementType, type -> new JsvroReader<>(codecs.root(type), codecs.rowDecoder(type)));
+        return readers.computeIfAbsent(elementType, type -> new JsvroReader<>(codecs.root(type), codecs.rowDecoder(type),
+                incoming -> codecs.rowDecoder(type, incoming)));
     }
 
     public JsvroSchema schema(Class<?> elementType) {

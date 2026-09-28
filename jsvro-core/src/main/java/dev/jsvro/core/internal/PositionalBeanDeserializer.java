@@ -23,13 +23,15 @@ final class PositionalBeanDeserializer extends BeanAsArrayDeserializer {
     private final SettableBeanProperty[] creatorProperties;
     private final int[] argumentIndexes;
     private volatile boolean fastEnabled;
+    private final String[] unknownColumns;
 
-    PositionalBeanDeserializer(BeanDeserializerBase named, List<String> columns,
+    PositionalBeanDeserializer(BeanDeserializerBase named, List<String> columns, List<String> knownColumns,
             DecodingReport report) {
         super(named, columns.stream()
                 .map(column -> named.findProperty(PropertyName.construct(column)))
                 .toArray(SettableBeanProperty[]::new));
         this.report = report;
+        this.unknownColumns = unknownColumns(columns, knownColumns);
         this.setterPath = _propertyBasedCreator == null && !_nonStandardCreation && _injectables == null
                 && _objectIdReader == null;
         this.scalarSlots = scalarSlots(_orderedProperties);
@@ -38,6 +40,31 @@ final class PositionalBeanDeserializer extends BeanAsArrayDeserializer {
         this.fastCreator = fastCreator();
         this.fastEnabled = fastCreator != null;
         report.construction(_beanType.getRawClass(), fastEnabled ? Construction.FAST : Construction.JACKSON);
+    }
+
+    private String[] unknownColumns(List<String> columns, List<String> knownColumns) {
+        String[] unknown = new String[columns.size()];
+        if (knownColumns != null) {
+            for (int i = 0; i < unknown.length; i++) {
+                if (_orderedProperties[i] == null && !knownColumns.contains(columns.get(i))) {
+                    unknown[i] = columns.get(i);
+                }
+            }
+        }
+        return unknown;
+    }
+
+    private void skipColumn(JsonParser parser, DeserializationContext context, int index, Object bean) {
+        String unknown = unknownColumns[index];
+        if (unknown == null) {
+            parser.skipChildren();
+        }
+        else if (bean != null) {
+            handleUnknownVanilla(parser, context, bean, unknown);
+        }
+        else {
+            handleUnknownProperty(parser, context, _beanType.getRawClass(), unknown);
+        }
     }
 
     @Override
@@ -114,7 +141,7 @@ final class PositionalBeanDeserializer extends BeanAsArrayDeserializer {
             }
             SettableBeanProperty property = creatorProperties[i];
             if (property == null) {
-                parser.skipChildren();
+                skipColumn(parser, context, i, null);
                 continue;
             }
             try {
@@ -166,7 +193,7 @@ final class PositionalBeanDeserializer extends BeanAsArrayDeserializer {
             }
             SettableBeanProperty property = properties[i];
             if (property == null) {
-                parser.skipChildren();
+                skipColumn(parser, context, i, bean);
                 continue;
             }
             try {
@@ -195,7 +222,7 @@ final class PositionalBeanDeserializer extends BeanAsArrayDeserializer {
             }
             SettableBeanProperty property = properties[i];
             if (property == null) {
-                parser.skipChildren();
+                skipColumn(parser, context, i, bean);
                 continue;
             }
             String name = property.getName();

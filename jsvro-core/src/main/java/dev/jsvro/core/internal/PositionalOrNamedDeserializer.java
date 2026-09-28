@@ -10,19 +10,21 @@ import java.util.List;
 
 final class PositionalOrNamedDeserializer extends DelegatingDeserializer {
     private final List<String> columns;
+    private final List<String> knownColumns;
     private final DecodingReport report;
     private volatile PositionalBeanDeserializer positional;
 
-    PositionalOrNamedDeserializer(ValueDeserializer<?> named, List<String> columns,
+    PositionalOrNamedDeserializer(ValueDeserializer<?> named, List<String> columns, List<String> knownColumns,
             DecodingReport report) {
         super(named);
         this.columns = columns;
+        this.knownColumns = knownColumns;
         this.report = report;
     }
 
     @Override
     protected ValueDeserializer<?> newDelegatingInstance(ValueDeserializer<?> newDelegatee) {
-        return new PositionalOrNamedDeserializer(newDelegatee, columns, report);
+        return new PositionalOrNamedDeserializer(newDelegatee, columns, knownColumns, report);
     }
 
     @Override
@@ -42,7 +44,7 @@ final class PositionalOrNamedDeserializer extends DelegatingDeserializer {
     private PositionalBeanDeserializer positional() {
         PositionalBeanDeserializer current = positional;
         if (current == null) {
-            current = new PositionalBeanDeserializer((BeanDeserializerBase) _delegatee, columns, report);
+            current = new PositionalBeanDeserializer((BeanDeserializerBase) _delegatee, columns, knownColumns, report);
             positional = current;
         }
         return current;

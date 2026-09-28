@@ -41,6 +41,24 @@ final class ObjectCodec implements ValueCodec {
     }
 
     @Override
+    public boolean collectIncomingTypes(JsvroColumn incoming, Map<Class<?>, List<String>> columnsByType) {
+        List<String> columns = incoming.columns().stream().map(JsvroColumn::name).toList();
+        List<String> existing = columnsByType.putIfAbsent(type, columns);
+        if (existing != null && !existing.equals(columns)) {
+            return false;
+        }
+        for (JsvroColumn column : incoming.columns()) {
+            for (Property property : properties) {
+                if (property.writer().getName().equals(column.name())
+                        && !property.codec().collectIncomingTypes(column, columnsByType)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    @Override
     public void write(Object value, JsonGenerator generator, SerializationContext context) {
         if (value == null) {
             generator.writeNull();
