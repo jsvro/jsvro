@@ -59,24 +59,35 @@ final class ObjectCodec implements ValueCodec {
         generator.writeEndArray();
     }
 
-    record Property(BeanPropertyWriter writer, ValueCodec codec) {
+    int scalarWriters() {
+        return (int) Arrays.stream(properties).filter(property -> property.scalar() != null).count();
+    }
+
+    record Property(BeanPropertyWriter writer, ValueCodec codec, ScalarWriter scalar) {
+        Property(BeanPropertyWriter writer, ValueCodec codec) {
+            this(writer, codec, codec instanceof LeafCodec ? ScalarWriter.of(writer) : null);
+        }
+
         JsvroColumn column() {
             return codec.column(writer.getName());
         }
 
         void write(Object bean, JsonGenerator generator, SerializationContext context) {
             try {
-                if (codec instanceof LeafCodec) {
+                if (scalar != null) {
+                    scalar.write(bean, generator);
+                }
+                else if (codec instanceof LeafCodec) {
                     writer.serializeAsElement(bean, generator, context);
                 }
                 else {
                     codec.write(writer.get(bean), generator, context);
                 }
             }
-            catch (JacksonException | JsvroException ex) {
+            catch (JacksonException | JsvroException | Error ex) {
                 throw ex;
             }
-            catch (Exception ex) {
+            catch (Throwable ex) {
                 throw new JsvroException("Could not write property '" + writer.getName() + "'", ex);
             }
         }
