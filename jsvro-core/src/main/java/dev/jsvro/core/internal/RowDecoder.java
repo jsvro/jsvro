@@ -13,20 +13,19 @@ import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Map;
 
 public final class RowDecoder {
     private final ObjectReader reader;
     private final boolean positional;
     private final List<JsvroColumn> columns;
-    private final Map<Class<?>, Construction> constructions;
+    private final DecodingReport report;
 
     RowDecoder(ObjectReader reader, boolean positional, List<JsvroColumn> columns,
-            Map<Class<?>, Construction> constructions) {
+            DecodingReport report) {
         this.reader = reader;
         this.positional = positional;
         this.columns = columns;
-        this.constructions = constructions;
+        this.report = report;
     }
 
     public boolean isPositional() {
@@ -34,7 +33,11 @@ public final class RowDecoder {
     }
 
     public Construction construction(Class<?> type) {
-        return constructions.get(type);
+        return report.construction(type);
+    }
+
+    public int scalarSlots(Class<?> type) {
+        return report.scalarSlots(type);
     }
 
     public JsonParser createParser(InputStream input) {

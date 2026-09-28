@@ -80,10 +80,10 @@ public final class RootCodec {
                 reading.readerFor(positionalType);
             }
             if (modifier.allTypesSupported()) {
-                return new RowDecoder(reader, true, schema.columns(), modifier.constructions());
+                return new RowDecoder(reader, true, schema.columns(), modifier.report());
             }
         }
-        return new RowDecoder(mapper.readerFor(type), false, schema.columns(), Map.of());
+        return new RowDecoder(mapper.readerFor(type), false, schema.columns(), new DecodingReport());
     }
 
     static SerializationContext context(JsonGenerator generator) {

@@ -15,7 +15,7 @@ final class PositionalDeserializerModifier extends ValueDeserializerModifier {
     private final Map<Class<?>, List<String>> columnsByType;
     private final Set<Class<?>> wrapped = ConcurrentHashMap.newKeySet();
     private final Set<Class<?>> unsupported = ConcurrentHashMap.newKeySet();
-    private final Map<Class<?>, Construction> constructions = new ConcurrentHashMap<>();
+    private final DecodingReport report = new DecodingReport();
 
     PositionalDeserializerModifier(Map<Class<?>, List<String>> columnsByType) {
         this.columnsByType = Map.copyOf(columnsByType);
@@ -25,8 +25,8 @@ final class PositionalDeserializerModifier extends ValueDeserializerModifier {
         return columnsByType.keySet();
     }
 
-    Map<Class<?>, Construction> constructions() {
-        return constructions;
+    DecodingReport report() {
+        return report;
     }
 
     boolean allTypesSupported() {
@@ -42,7 +42,7 @@ final class PositionalDeserializerModifier extends ValueDeserializerModifier {
         }
         if (deserializer instanceof BeanDeserializer) {
             wrapped.add(beanDescription.getBeanClass());
-            return new PositionalOrNamedDeserializer(deserializer, columns, constructions);
+            return new PositionalOrNamedDeserializer(deserializer, columns, report);
         }
         unsupported.add(beanDescription.getBeanClass());
         return deserializer;

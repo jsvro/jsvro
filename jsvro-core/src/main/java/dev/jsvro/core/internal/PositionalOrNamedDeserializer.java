@@ -7,23 +7,22 @@ import tools.jackson.databind.deser.bean.BeanDeserializerBase;
 import tools.jackson.databind.deser.std.DelegatingDeserializer;
 
 import java.util.List;
-import java.util.Map;
 
 final class PositionalOrNamedDeserializer extends DelegatingDeserializer {
     private final List<String> columns;
-    private final Map<Class<?>, Construction> constructions;
+    private final DecodingReport report;
     private volatile PositionalBeanDeserializer positional;
 
     PositionalOrNamedDeserializer(ValueDeserializer<?> named, List<String> columns,
-            Map<Class<?>, Construction> constructions) {
+            DecodingReport report) {
         super(named);
         this.columns = columns;
-        this.constructions = constructions;
+        this.report = report;
     }
 
     @Override
     protected ValueDeserializer<?> newDelegatingInstance(ValueDeserializer<?> newDelegatee) {
-        return new PositionalOrNamedDeserializer(newDelegatee, columns, constructions);
+        return new PositionalOrNamedDeserializer(newDelegatee, columns, report);
     }
 
     @Override
@@ -43,7 +42,7 @@ final class PositionalOrNamedDeserializer extends DelegatingDeserializer {
     private PositionalBeanDeserializer positional() {
         PositionalBeanDeserializer current = positional;
         if (current == null) {
-            current = new PositionalBeanDeserializer((BeanDeserializerBase) _delegatee, columns, constructions);
+            current = new PositionalBeanDeserializer((BeanDeserializerBase) _delegatee, columns, report);
             positional = current;
         }
         return current;
