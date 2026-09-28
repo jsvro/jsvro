@@ -14,26 +14,30 @@ import tools.jackson.databind.introspect.AnnotatedWithParams;
 
 import java.util.BitSet;
 import java.util.List;
-import java.util.Map;
 
 final class PositionalBeanDeserializer extends BeanAsArrayDeserializer {
-    private final Map<Class<?>, Construction> constructions;
+    private final DecodingReport report;
+    private final boolean setterPath;
+    private final ScalarSlot[] scalarSlots;
     private final FastCreator fastCreator;
     private final SettableBeanProperty[] creatorProperties;
     private final int[] argumentIndexes;
     private volatile boolean fastEnabled;
 
     PositionalBeanDeserializer(BeanDeserializerBase named, List<String> columns,
-            Map<Class<?>, Construction> constructions) {
+            DecodingReport report) {
         super(named, columns.stream()
                 .map(column -> named.findProperty(PropertyName.construct(column)))
                 .toArray(SettableBeanProperty[]::new));
-        this.constructions = constructions;
+        this.report = report;
+        this.setterPath = _propertyBasedCreator == null && !_nonStandardCreation && _injectables == null
+                && _objectIdReader == null;
+        this.scalarSlots = scalarSlots(_orderedProperties);
         this.creatorProperties = new SettableBeanProperty[_orderedProperties.length];
         this.argumentIndexes = new int[_orderedProperties.length];
         this.fastCreator = fastCreator();
         this.fastEnabled = fastCreator != null;
-        constructions.put(_beanType.getRawClass(), fastEnabled ? Construction.FAST : Construction.JACKSON);
+        report.construction(_beanType.getRawClass(), fastEnabled ? Construction.FAST : Construction.JACKSON);
     }
 
     @Override
@@ -47,10 +51,24 @@ final class PositionalBeanDeserializer extends BeanAsArrayDeserializer {
         if (_propertyBasedCreator != null) {
             return deserializeWithCreator(parser, context);
         }
-        if (_vanillaProcessing) {
+        if (setterPath) {
             return deserializeWithSetters(parser, context);
         }
         return super.deserialize(parser, context);
+    }
+
+    private ScalarSlot[] scalarSlots(SettableBeanProperty[] properties) {
+        ScalarSlot[] slots = new ScalarSlot[properties.length];
+        int count = 0;
+        if (setterPath) {
+            for (int i = 0; i < properties.length; i++) {
+                if (properties[i] != null && (slots[i] = ScalarSlot.of(properties[i])) != null) {
+                    count++;
+                }
+            }
+        }
+        report.scalarSlots(_beanType.getRawClass(), count);
+        return slots;
     }
 
     private FastCreator fastCreator() {
@@ -115,7 +133,7 @@ final class PositionalBeanDeserializer extends BeanAsArrayDeserializer {
             catch (Throwable fastFailure) {
                 Object bean = createWithJackson(arguments, parser, context);
                 fastEnabled = false;
-                constructions.put(_beanType.getRawClass(), Construction.JACKSON);
+                report.construction(_beanType.getRawClass(), Construction.JACKSON);
                 return bean;
             }
         }
@@ -152,9 +170,12 @@ final class PositionalBeanDeserializer extends BeanAsArrayDeserializer {
                 continue;
             }
             try {
-                property.deserializeAndSet(parser, context, bean);
+                ScalarSlot slot = scalarSlots[i];
+                if (slot == null || !slot.readInto(parser, bean)) {
+                    property.deserializeAndSet(parser, context, bean);
+                }
             }
-            catch (Exception ex) {
+            catch (Throwable ex) {
                 throw wrapAndThrow(ex, bean, property.getName(), context);
             }
         }
