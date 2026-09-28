@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -35,23 +34,17 @@ public final class JsvroReader<T> {
     }
 
     public List<T> readList(InputStream input) {
-        try (Stream<T> stream = readStream(input)) {
-            return stream.collect(Collectors.toCollection(ArrayList::new));
+        try (JsonParser parser = open(input)) {
+            List<T> result = new ArrayList<>();
+            rows(parser).forEachRemaining(result::add);
+            return result;
         }
     }
 
     public Stream<T> readStream(InputStream input) {
-        Objects.requireNonNull(input, "input");
-
-        JsonParser parser = rows.createParser(NonClosingStreams.input(input));
+        JsonParser parser = open(input);
         try {
-            if (parser.nextToken() == null) {
-                throw new JsvroException("Empty JSVRO stream");
-            }
-            SchemaValidator.validate(root.schema(), parser);
-
-            @SuppressWarnings("unchecked")
-            Iterator<T> iterator = (Iterator<T>) rows.rows(parser);
+            Iterator<T> iterator = rows(parser);
             return StreamSupport.stream(
                             Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED | Spliterator.NONNULL), false)
                     .onClose(parser::close);
@@ -60,5 +53,26 @@ public final class JsvroReader<T> {
             parser.close();
             throw ex;
         }
+    }
+
+    private JsonParser open(InputStream input) {
+        Objects.requireNonNull(input, "input");
+        JsonParser parser = rows.createParser(NonClosingStreams.input(input));
+        try {
+            if (parser.nextToken() == null) {
+                throw new JsvroException("Empty JSVRO stream");
+            }
+            SchemaValidator.validate(root.schema(), parser);
+            return parser;
+        }
+        catch (RuntimeException ex) {
+            parser.close();
+            throw ex;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Iterator<T> rows(JsonParser parser) {
+        return (Iterator<T>) rows.rows(parser);
     }
 }

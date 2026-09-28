@@ -74,6 +74,7 @@ public final class RowDecoder {
         private final JsonParser parser;
         private final MappingIterator<Object> values;
         private long index;
+        private boolean ready;
 
         private PositionalRows(JsonParser parser, MappingIterator<Object> values) {
             this.parser = parser;
@@ -82,12 +83,16 @@ public final class RowDecoder {
 
         @Override
         public boolean hasNext() {
+            if (ready) {
+                return true;
+            }
             if (!values.hasNextValue()) {
                 return false;
             }
             if (parser.currentToken() != JsonToken.START_ARRAY) {
                 throw notARow(index, parser.currentToken());
             }
+            ready = true;
             return true;
         }
 
@@ -96,6 +101,7 @@ public final class RowDecoder {
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
+            ready = false;
             long row = index++;
             try {
                 return values.nextValue();

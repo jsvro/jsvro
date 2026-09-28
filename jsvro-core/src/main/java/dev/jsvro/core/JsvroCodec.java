@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /**
@@ -21,6 +22,8 @@ import java.util.stream.Stream;
 public final class JsvroCodec {
     private final ObjectMapper mapper;
     private final CodecFactory codecs;
+    private final ConcurrentHashMap<JavaType, JsvroWriter<Object>> writers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<JavaType, JsvroReader<Object>> readers = new ConcurrentHashMap<>();
 
     public JsvroCodec(ObjectMapper mapper) {
         this.mapper = Objects.requireNonNull(mapper, "mapper");
@@ -35,7 +38,7 @@ public final class JsvroCodec {
 
     public JsvroWriter<Object> writerFor(JavaType elementType) {
         Objects.requireNonNull(elementType, "elementType");
-        return new JsvroWriter<>(codecs.root(elementType), mapper.writer());
+        return writers.computeIfAbsent(elementType, type -> new JsvroWriter<>(codecs.root(type), mapper.writer()));
     }
 
     public <T> JsvroReader<T> readerFor(Class<T> elementType) {
@@ -46,7 +49,7 @@ public final class JsvroCodec {
 
     public JsvroReader<Object> readerFor(JavaType elementType) {
         Objects.requireNonNull(elementType, "elementType");
-        return new JsvroReader<>(codecs.root(elementType), codecs.rowDecoder(elementType));
+        return readers.computeIfAbsent(elementType, type -> new JsvroReader<>(codecs.root(type), codecs.rowDecoder(type)));
     }
 
     public JsvroSchema schema(Class<?> elementType) {

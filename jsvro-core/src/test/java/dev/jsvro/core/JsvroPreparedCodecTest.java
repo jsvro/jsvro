@@ -1,6 +1,7 @@
 package dev.jsvro.core;
 
 import dev.jsvro.core.internal.NonClosingStreams;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -8,11 +9,15 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class JsvroPreparedCodecTest {
@@ -46,6 +51,37 @@ class JsvroPreparedCodecTest {
 
         assertEquals(List.of(new Person("Alice", 30)), reader.readList(new ByteArrayInputStream(output.toByteArray())));
         assertEquals(List.of(new Person("Alice", 30)), reader.readList(new ByteArrayInputStream(output.toByteArray())));
+    }
+
+    @Test
+    void preparedHandlesAreCachedPerType() {
+        assertSame(codec.writerFor(Person.class), codec.writerFor(Person.class));
+        assertSame(codec.readerFor(Person.class), codec.readerFor(Person.class));
+    }
+
+    @Test
+    void repeatedHasNextDoesNotSkipRows() {
+        assertRowsSurviveRepeatedHasNext(Person.class, List.of(new Person("Alice", 30), new Person("Bob", 40)));
+        assertRowsSurviveRepeatedHasNext(TwoShapes.class, List.of(
+                new TwoShapes(new Inner("a", "b"), new Inner("c", null)), new TwoShapes(new Inner("d", "e"), null)));
+    }
+
+    record Inner(String first, String second) {}
+
+    record TwoShapes(Inner full, @JsonIgnoreProperties("second") Inner firstOnly) {}
+
+    private <T> void assertRowsSurviveRepeatedHasNext(Class<T> type, List<T> rows) {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        codec.writerFor(type).write(output, rows);
+
+        try (Stream<T> stream = codec.readerFor(type).readStream(new ByteArrayInputStream(output.toByteArray()))) {
+            Iterator<T> iterator = stream.iterator();
+            List<T> decoded = new ArrayList<>();
+            while (iterator.hasNext() && iterator.hasNext()) {
+                decoded.add(iterator.next());
+            }
+            assertEquals(rows, decoded);
+        }
     }
 
     @Test
