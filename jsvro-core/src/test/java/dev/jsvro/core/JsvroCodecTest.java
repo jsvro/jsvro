@@ -83,17 +83,17 @@ class JsvroCodecTest {
     }
 
     @Test
-    void rejectsAHeaderThatDoesNotMatchTheTargetType() {
+    void aHeaderWithoutMatchingColumnsDecodesLikeTheEquivalentJson() {
         String input = """
                 {"jsvro":"1","columns":[{"name":"wrong","type":"string"}]}
                 ["Alice"]
                 """;
+        Exception json = assertThrows(Exception.class, () -> mapper.readValue("{\"wrong\":\"Alice\"}", Person.class));
 
-        assertThrows(
-                JsvroException.class,
-                () -> codec.readList(
-                        new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)),
-                        Person.class));
+        Exception jsvro = assertThrows(Exception.class, () -> codec.readList(
+                new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)), Person.class));
+
+        assertEquals(json.getClass(), jsvro.getClass());
     }
 
     @Test

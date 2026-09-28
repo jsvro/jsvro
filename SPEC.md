@@ -120,7 +120,17 @@ The Java reference implementation derives this order from Jackson's serializatio
 
 A v1 reader MUST reject a schema whose `jsvro` value it does not support.
 
-The Java reference decoder currently also requires the incoming schema to exactly match the target Java type's derived schema. Future versions may define reader/writer schema resolution rules.
+## Schema resolution
+
+The writer's schema travels with every stream, so a reader can decode streams written with a different schema than its own:
+
+- Column names MUST be unique within one `columns` array.
+- A reader MUST match the writer's columns to its own by name, not position, at every level of nested objects and array items.
+- Columns the reader does not know, and columns the reader expects but the stream lacks, MUST be handled the way the reader's JSON binding handles unknown and absent object properties.
+- A column's kind is object, array, map or scalar; every other type is a scalar. When a column the reader knows has a different kind in the stream, the reader MUST reject the stream before reading any row. Differences between scalar types are left to the reader's usual JSON coercion rules.
+- Rows MUST still match the writer's schema.
+
+A stream decodes to the same result as the equivalent JSON objects would. The Java reference decoder uses its positional fast path when the stream's schema equals its own, and resolves by name otherwise.
 
 ## Media type
 

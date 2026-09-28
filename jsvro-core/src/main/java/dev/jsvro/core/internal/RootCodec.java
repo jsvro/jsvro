@@ -20,6 +20,7 @@ import java.util.Map;
 public final class RootCodec {
     private final JsvroSchema schema;
     private final String header;
+    private final byte[] headerLine;
     private final ObjectCodec codec;
     private final Map<Class<?>, List<String>> columnsByType;
     private RowDecoder rowDecoder;
@@ -27,6 +28,7 @@ public final class RootCodec {
     RootCodec(JsvroSchema schema, String header, ObjectCodec codec) {
         this.schema = schema;
         this.header = header;
+        this.headerLine = (header + "\n").getBytes(java.nio.charset.StandardCharsets.UTF_8);
         this.codec = codec;
         Map<Class<?>, List<String>> collected = new HashMap<>();
         this.columnsByType = codec.collectObjectTypes(collected) ? Map.copyOf(collected) : null;
@@ -34,6 +36,10 @@ public final class RootCodec {
 
     public JsvroSchema schema() {
         return schema;
+    }
+
+    public byte[] headerLine() {
+        return headerLine;
     }
 
     int rootScalarWriters() {

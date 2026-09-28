@@ -5,6 +5,8 @@ import dev.jsvro.core.People.Person;
 import dev.jsvro.core.People.Person2;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.exc.UnrecognizedPropertyException;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.ByteArrayInputStream;
@@ -53,14 +55,35 @@ class JsvroSchemaEvolutionTest {
     }
 
     @Test
-    void aReaderRejectsAStreamWithAnExtraWireColumn() {
-        List<PersonWithEmail> withEmail = people.stream()
+    void aReaderIgnoresAColumnItDoesNotKnow() {
+        assertEquals(people, read(write(PersonWithEmail.class, withEmail()), Person.class));
+    }
+
+    @Test
+    void aReaderGivesColumnsTheStreamLacksTheirDefault() {
+        List<PersonWithEmail> decoded = read(write(Person.class, people), PersonWithEmail.class);
+
+        assertEquals(people.size(), decoded.size());
+        for (int i = 0; i < people.size(); i++) {
+            Person person = people.get(i);
+            assertEquals(new PersonWithEmail(person.name(), person.age(), person.born(), person.address(), person.roles(), null),
+                    decoded.get(i));
+        }
+    }
+
+    @Test
+    void failingOnUnknownPropertiesAppliesToUnknownColumns() {
+        JsonMapper strict = JsonMapper.builder().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build();
+        byte[] wire = write(PersonWithEmail.class, withEmail());
+
+        assertThrows(UnrecognizedPropertyException.class,
+                () -> new JsvroCodec(strict).readList(new ByteArrayInputStream(wire), Person.class));
+    }
+
+    private List<PersonWithEmail> withEmail() {
+        return people.stream()
                 .map(p -> new PersonWithEmail(p.name(), p.age(), p.born(), p.address(), p.roles(), "x@example.com"))
                 .toList();
-        byte[] wire = write(PersonWithEmail.class, withEmail);
-
-        var failure = assertThrows(JsvroException.class, () -> read(wire, Person.class));
-        assertEquals("Schema mismatch at columns: expected 5 columns but got 6", failure.getMessage());
     }
 
     private <T> byte[] write(Class<T> type, List<T> rows) {

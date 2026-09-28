@@ -1,10 +1,13 @@
 [versions]
 avro = "1.12.2"
 jackson = "3.1.5"
+jmh = "1.37"
 junit = "6.0.3"
 spring-boot = "4.1.1"
 
 [libraries]
+jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
+jmh-generator = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
 avro = { module = "org.apache.avro:avro", version.ref = "avro" }
 avro-compiler = { module = "org.apache.avro:avro-compiler", version.ref = "avro" }
 jackson-databind = { module = "tools.jackson.core:jackson-databind", version.ref = "jackson" }

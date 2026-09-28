@@ -139,3 +139,28 @@ tasks.register<PublishBenchmarkReport>("publishBenchmarkReport") {
     readme = rootProject.layout.projectDirectory.file("README.md")
     outputs.upToDateWhen { false }
 }
+
+val jmh by sourceSets.creating {
+    compileClasspath += sourceSets.test.get().output + sourceSets.test.get().compileClasspath
+    runtimeClasspath += output + compileClasspath + sourceSets.test.get().runtimeClasspath
+}
+
+dependencies {
+    "jmhImplementation"(libs.jmh.core)
+    "jmhAnnotationProcessor"(libs.jmh.generator)
+}
+
+tasks.register<JavaExec>("jmh") {
+    description = "Runs the JMH microbenchmarks; pass JMH options with -Pjmh.args=\"...\"."
+    group = "verification"
+    classpath = jmh.runtimeClasspath
+    mainClass = "org.openjdk.jmh.Main"
+    val results = layout.buildDirectory.file("reports/jmh/results.json")
+    outputs.file(results)
+    outputs.upToDateWhen { false }
+    val extra = providers.gradleProperty("jmh.args").map { it.split(" ").filter(String::isNotBlank) }.orElse(listOf())
+    argumentProviders.add(CommandLineArgumentProvider {
+        extra.get() + listOf("-rf", "json", "-rff", results.get().asFile.absolutePath)
+    })
+    doFirst { results.get().asFile.parentFile.mkdirs() }
+}

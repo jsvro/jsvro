@@ -155,6 +155,10 @@ JSVRO v1 uses a small language-neutral schema vocabulary:
 
 Java implementation class names are never written to the wire.
 
+### Schema evolution
+
+Readers match columns to their own schema by name, so writer and reader can evolve separately: a stream decodes to the same result as the equivalent JSON objects would. Columns the reader does not know are handled like unknown JSON properties (ignored under Jackson 3's defaults), and missing columns like absent ones. Only a structural conflict, such as an object where the reader expects a list, rejects the stream. The rules are in [SPEC.md](SPEC.md#schema-resolution).
+
 ## Jackson behavior
 
 JSVRO derives properties through Jackson serialization introspection, rather than `Class.getRecordComponents()`. This means it follows the configured Jackson property names, ordering and ignored properties. Plain records require no annotations:
@@ -170,7 +174,6 @@ The decoder validates the incoming schema header, then reads every row through a
 ## Current constraints
 
 - root rows must be object/record-like types, and a row must not be `null`
-- the decoder requires the incoming schema to match the target type exactly; there is no schema evolution yet
 - a row whose runtime class is a subclass of the declared element type is rejected, because its extra properties have no column
 - recursive/cyclic object schemas are rejected in v1
 - polymorphic, abstract, `@JsonUnwrapped`, `@JsonAnyGetter` and untyped (`Object`) properties are rejected when the schema is derived
