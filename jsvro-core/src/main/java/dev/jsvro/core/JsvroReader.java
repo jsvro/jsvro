@@ -3,10 +3,16 @@ package dev.jsvro.core;
 import dev.jsvro.core.internal.NonClosingStreams;
 import dev.jsvro.core.internal.RootCodec;
 import dev.jsvro.core.internal.RowDecoder;
-import dev.jsvro.core.internal.SchemaValidator;
+import dev.jsvro.core.internal.SchemaReader;
+import dev.jsvro.core.internal.SchemaResolution;
 import tools.jackson.core.JsonParser;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.SequenceInputStream;
+import java.io.UncheckedIOException;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -34,17 +40,19 @@ public final class JsvroReader<T> {
     }
 
     public List<T> readList(InputStream input) {
-        try (JsonParser parser = open(input)) {
+        Opened<T> opened = open(input);
+        try (JsonParser parser = opened.parser()) {
             List<T> result = new ArrayList<>();
-            rows(parser).forEachRemaining(result::add);
+            opened.rows().forEachRemaining(result::add);
             return result;
         }
     }
 
     public Stream<T> readStream(InputStream input) {
-        JsonParser parser = open(input);
+        Opened<T> opened = open(input);
+        JsonParser parser = opened.parser();
         try {
-            Iterator<T> iterator = rows(parser);
+            Iterator<T> iterator = opened.rows();
             return StreamSupport.stream(
                             Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED | Spliterator.NONNULL), false)
                     .onClose(parser::close);
@@ -55,15 +63,38 @@ public final class JsvroReader<T> {
         }
     }
 
-    private JsonParser open(InputStream input) {
+    private Opened<T> open(InputStream input) {
         Objects.requireNonNull(input, "input");
-        JsonParser parser = rows.createParser(NonClosingStreams.input(input));
+        byte[] expected = root.headerLine();
+        byte[] prefix = new byte[expected.length];
+        int read;
+        try {
+            read = input.readNBytes(prefix, 0, prefix.length);
+        }
+        catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+        if (read == expected.length && Arrays.equals(prefix, expected)) {
+            JsonParser parser = rows.createParser(NonClosingStreams.input(input));
+            @SuppressWarnings("unchecked")
+            Iterator<T> iterator = (Iterator<T>) rows.rows(parser);
+            return new Opened<>(parser, iterator);
+        }
+        InputStream replayed = new SequenceInputStream(new ByteArrayInputStream(prefix, 0, read), NonClosingStreams.input(input));
+        JsonParser parser = rows.createParser(replayed);
         try {
             if (parser.nextToken() == null) {
                 throw new JsvroException("Empty JSVRO stream");
             }
-            SchemaValidator.validate(root.schema(), parser);
-            return parser;
+            JsvroSchema incoming = SchemaReader.read(parser);
+            RowDecoder decoder = rows;
+            if (!incoming.equals(root.schema())) {
+                SchemaResolution.checkCompatible(root.schema().columns(), incoming.columns());
+                decoder = rows.forIncoming(incoming.columns());
+            }
+            @SuppressWarnings("unchecked")
+            Iterator<T> iterator = (Iterator<T>) decoder.rows(parser);
+            return new Opened<>(parser, iterator);
         }
         catch (RuntimeException ex) {
             parser.close();
@@ -71,8 +102,5 @@ public final class JsvroReader<T> {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private Iterator<T> rows(JsonParser parser) {
-        return (Iterator<T>) rows.rows(parser);
-    }
+    private record Opened<T>(JsonParser parser, Iterator<T> rows) {}
 }

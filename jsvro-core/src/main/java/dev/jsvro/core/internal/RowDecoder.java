@@ -40,6 +40,10 @@ public final class RowDecoder {
         return report.scalarSlots(type);
     }
 
+    public RowDecoder forIncoming(List<JsvroColumn> incoming) {
+        return new RowDecoder(reader, false, incoming, report);
+    }
+
     public JsonParser createParser(InputStream input) {
         return reader.createParser(input);
     }
