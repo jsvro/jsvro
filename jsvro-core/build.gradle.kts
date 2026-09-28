@@ -13,6 +13,8 @@ plugins {
     `maven-publish`
 }
 
+description = "JSVRO: a compact, row-oriented positional serialization format built on Jackson 3."
+
 abstract class GenerateAvro : DefaultTask() {
     @get:InputDirectory
     @get:PathSensitive(PathSensitivity.RELATIVE)
@@ -54,7 +56,7 @@ dependencies {
 }
 
 tasks.withType<Test>().configureEach {
-    systemProperty("org.apache.avro.SERIALIZABLE_PACKAGES", "dev.jsvro.core.avro")
+    systemProperty("org.apache.avro.SERIALIZABLE_PACKAGES", "io.github.jsvro.core.avro")
 }
 
 tasks.test {

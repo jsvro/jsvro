@@ -65,7 +65,7 @@ Add the starter:
 
 ```kotlin
 dependencies {
-    implementation("dev.jsvro:jsvro-spring-boot-starter:0.1.0")
+    implementation("io.github.jsvro:jsvro-spring-boot-starter:0.1.0")
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
 }
 ```
@@ -195,7 +195,7 @@ The Gradle wrapper pins Gradle 9.3.0. A GitHub Actions workflow runs the build o
 
 JSVRO is compared with plain Jackson JSON, the readable format it replaces, and with Apache Avro, the binary format to reach for when readability does not matter. Three aggregate roots are measured at row counts from 10 to 100,000: `Person` (records with a nested postal area), `Area` (plain classes with boundary polygons) and `FxTransaction` (a 36-field record nesting a person, address and postal area).
 
-**[Open the full interactive report](https://steinard.github.io/jsvro/benchmark/)** for wire size, time, CPU and memory per aggregate root and row count, compared with JSON and with Avro on separate pages.
+**[Open the full interactive report](https://jsvro.github.io/jsvro/benchmark/)** for wire size, time, CPU and memory per aggregate root and row count, compared with JSON and with Avro on separate pages.
 
 > **Disclaimer:** these numbers were collected by running the benchmark on the author's development machine. Results vary with hardware, JVM, load and data shape, so treat them as an indication of gains and losses, not as guarantees. Run the benchmark on your own machine and data before deciding.
 
