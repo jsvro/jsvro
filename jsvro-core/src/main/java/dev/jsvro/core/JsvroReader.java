@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
@@ -25,10 +26,12 @@ import java.util.stream.StreamSupport;
 public final class JsvroReader<T> {
     private final RootCodec root;
     private final RowDecoder rows;
+    private final Function<JsvroSchema, RowDecoder> evolved;
 
-    JsvroReader(RootCodec root, RowDecoder rows) {
+    JsvroReader(RootCodec root, RowDecoder rows, Function<JsvroSchema, RowDecoder> evolved) {
         this.root = root;
         this.rows = rows;
+        this.evolved = evolved;
     }
 
     public JsvroSchema schema() {
@@ -90,7 +93,7 @@ public final class JsvroReader<T> {
             RowDecoder decoder = rows;
             if (!incoming.equals(root.schema())) {
                 SchemaResolution.checkCompatible(root.schema().columns(), incoming.columns());
-                decoder = rows.forIncoming(incoming.columns());
+                decoder = evolved.apply(incoming);
             }
             @SuppressWarnings("unchecked")
             Iterator<T> iterator = (Iterator<T>) decoder.rows(parser);

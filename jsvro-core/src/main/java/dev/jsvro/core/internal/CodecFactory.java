@@ -36,6 +36,10 @@ public final class CodecFactory {
         return root(type).rowDecoder(mapper, type);
     }
 
+    public RowDecoder rowDecoder(JavaType type, JsvroSchema incoming) {
+        return root(type).rowDecoderFor(mapper, type, incoming);
+    }
+
     public int cachedCodecCount() {
         return (int) roots.values().stream().filter(RootCodec.class::isInstance).count();
     }

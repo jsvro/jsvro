@@ -13,12 +13,19 @@ import java.util.concurrent.ConcurrentHashMap;
 
 final class PositionalDeserializerModifier extends ValueDeserializerModifier {
     private final Map<Class<?>, List<String>> columnsByType;
+    private final Map<Class<?>, List<String>> knownColumnsByType;
     private final Set<Class<?>> wrapped = ConcurrentHashMap.newKeySet();
     private final Set<Class<?>> unsupported = ConcurrentHashMap.newKeySet();
     private final DecodingReport report = new DecodingReport();
 
     PositionalDeserializerModifier(Map<Class<?>, List<String>> columnsByType) {
+        this(columnsByType, Map.of());
+    }
+
+    PositionalDeserializerModifier(Map<Class<?>, List<String>> columnsByType,
+            Map<Class<?>, List<String>> knownColumnsByType) {
         this.columnsByType = Map.copyOf(columnsByType);
+        this.knownColumnsByType = Map.copyOf(knownColumnsByType);
     }
 
     Set<Class<?>> positionalTypes() {
@@ -40,9 +47,12 @@ final class PositionalDeserializerModifier extends ValueDeserializerModifier {
         if (columns == null) {
             return deserializer;
         }
-        if (deserializer instanceof BeanDeserializer) {
+        List<String> knownColumns = knownColumnsByType.get(beanDescription.getBeanClass());
+        boolean unknownColumns = knownColumns != null && !knownColumns.containsAll(columns);
+        if (deserializer instanceof BeanDeserializer
+                && !(unknownColumns && beanDescription.get().findAnySetterAccessor() != null)) {
             wrapped.add(beanDescription.getBeanClass());
-            return new PositionalOrNamedDeserializer(deserializer, columns, report);
+            return new PositionalOrNamedDeserializer(deserializer, columns, knownColumns, report);
         }
         unsupported.add(beanDescription.getBeanClass());
         return deserializer;

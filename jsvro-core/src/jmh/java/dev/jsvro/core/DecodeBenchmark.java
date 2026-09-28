@@ -12,6 +12,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -28,6 +29,9 @@ public class DecodeBenchmark {
     @Param({"100", "1000", "3000"})
     public int rows;
 
+    @Param({"same", "evolved"})
+    public String schema;
+
     private BenchmarkFormat<?> jsvro;
     private byte[] encoded;
 
@@ -43,7 +47,20 @@ public class DecodeBenchmark {
     private <T> void prepare(BenchmarkDataset<T> selected) {
         BenchmarkFormat<T> format = selected.jsvro();
         encoded = format.encode(selected.generate(rows));
+        if (schema.equals("evolved")) {
+            encoded = withLeadingColumn(encoded);
+        }
         jsvro = format;
+    }
+
+    private static byte[] withLeadingColumn(byte[] stream) {
+        String[] lines = new String(stream, StandardCharsets.UTF_8).split("\n");
+        StringBuilder evolved = new StringBuilder(lines[0].replaceFirst("\"columns\":\\[",
+                "\"columns\":[{\"name\":\"addedByWriter\",\"type\":\"string\"},")).append('\n');
+        for (int i = 1; i < lines.length; i++) {
+            evolved.append("[\"added\",").append(lines[i], 1, lines[i].length()).append('\n');
+        }
+        return evolved.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     @Benchmark
