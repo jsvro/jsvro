@@ -3,6 +3,7 @@ avro = "1.12.2"
 jackson = "3.1.5"
 jmh = "1.37"
 junit = "6.0.3"
+maven-publish = "0.37.0"
 spring-boot = "4.1.1"
 
 [libraries]
@@ -16,4 +17,5 @@ spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-depe
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "spring-boot" }
 
 [plugins]
+maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
