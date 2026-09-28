@@ -36,6 +36,10 @@ public final class RootCodec {
         return schema;
     }
 
+    int rootScalarWriters() {
+        return codec.scalarWriters();
+    }
+
     public void write(JsonGenerator generator, Iterator<?> rows) {
         generator.objectWriteContext().writeValue(generator, new JacksonSerializable.Base() {
             @Override
