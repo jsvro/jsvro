@@ -10,7 +10,7 @@ buildscript {
 
 plugins {
     `java-library`
-    `maven-publish`
+    alias(libs.plugins.maven.publish)
 }
 
 description = "JSVRO: a compact, row-oriented positional serialization format built on Jackson 3."

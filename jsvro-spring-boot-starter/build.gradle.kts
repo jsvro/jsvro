@@ -1,6 +1,6 @@
 plugins {
     `java-library`
-    `maven-publish`
+    alias(libs.plugins.maven.publish)
 }
 
 description = "Spring Boot auto-configuration for JSVRO HTTP message conversion."
