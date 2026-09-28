@@ -130,7 +130,7 @@ The writer's schema travels with every stream, so a reader can decode streams wr
 - A column's kind is object, array, map or scalar; every other type is a scalar. When a column the reader knows has a different kind in the stream, the reader MUST reject the stream before reading any row. Differences between scalar types are left to the reader's usual JSON coercion rules.
 - Rows MUST still match the writer's schema.
 
-A stream decodes to the same result as the equivalent JSON objects would. The Java reference decoder uses its positional fast path when the stream's schema equals its own, and resolves by name otherwise.
+A stream decodes to the same result as the equivalent JSON objects would. The Java reference decoder resolves by name once per incoming schema and then decodes positionally.
 
 ## Media type
 
