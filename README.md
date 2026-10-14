@@ -221,6 +221,7 @@ Measured 2026-09-28T10:12:55Z on Java 21.0.6+7-LTS with 11 CPUs. Each value is t
 | 1,000 | 0.70× | 1.30× | 0.54× | 0.56× | 0.47× | 1.52× |
 | 10,000 | 0.70× | 1.30× | 0.56× | 0.53× | 0.46× | 1.43× |
 | 100,000 | 0.70× | 1.30× | 0.59× | 0.52× | 0.46× | 1.42× |
+
 <!-- benchmark-summary:end -->
 
 How to read it: against JSON, JSVRO is smaller, faster and uses less memory at every size, most of all when decoding. Against Avro, JSVRO is about 40% bigger on the wire and takes roughly 1.8× as long to encode and just over 2× as long to decode once a stream passes about 100 rows; it is smaller after gzip, allocates less memory when decoding, and for 10–50 rows decodes as fast as Avro, where Avro's container header dominates. If you want payloads a person can read with `curl` and debug in a terminal, JSVRO keeps that at a lower cost than JSON. If readability does not matter and throughput does, choose Avro.
